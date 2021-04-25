@@ -129,13 +129,8 @@ router.delete('/user/me/avatar',authFunction, async(req,res)=>{
     res.send(200)
 })
 //serving image
-router.get('/users/:id/avatar',async(req,res)=>{
+router.get('/users/me/avatar',authFunction,async(req,res)=>{
     try {
-        console.log(req.params.id)
-        const user = await userModel.findById(req.params.id)
-        if(!user||!user.avatar){
-            throw new NotFoundError
-        }
         res.set('Content-Type','image/png')
         res.send(user.avatar)
     } catch (e) {
