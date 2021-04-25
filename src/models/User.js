@@ -54,9 +54,17 @@ const userSchema = mongoose.Schema({
 },{
     timestamps:true
 })
-//change hey with next line
-//process.env.JWT_KEY
-//Generate Auth Token
+
+userSchema.methods.toJSON= function(){
+    const user = this
+    const userObject =user.toObject()
+
+    delete userObject.password
+    delete userObject.tokens
+    delete userObject.avatar
+
+    return userObject
+}
 userSchema.methods.generateAuthToken = async function() {
 
     const user=this

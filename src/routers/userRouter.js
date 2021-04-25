@@ -6,45 +6,22 @@ const authFunction = require('./../middleware/auth')
 const { UserCreatedSuccess, UserLoggedInSuccess,UserLoggedOutSuccess , UserDeletedSuccess} = require('../utils/success')
 const { BadRequestError, AuthenticationError, SchemaValidationError,InvalidFileTypeError, NotFoundError } = require('../utils/error')
 const multer = require('multer')
+
 const upload = multer({
     limits:{
-        fileSize:1000000,
+        fileSize:10000000,
     },
     fileFilter(req,file,cb){
         if (!file.originalname.endsWith('.jpg'||'.jpeg'||'.png')){
             return cb(new InvalidFileTypeError)
-            //return cb(new Error('Ipload an img'))
         }
-        // cb(new Error('File must be an Image!'))
         cb(undefined,true)
-        // cb(undefined,false)
     }
 })
 
 const router = new express.Router()
 
-router.post('/user/me/avatar',authFunction, upload.single('avatar'), async(req,res)=>{
-    req.user.avatar=req.file.buffer
-    await req.user.save()
-    res.send(200)
-})
-router.delete('/user/me/avatar',authFunction, async(req,res)=>{
-    req.user.avatar=undefined
-    await req.user.save()
-    res.send(200)
-})
-router.get('/users/:id/avatar',async(req,res)=>{
-    try {
-        const user = await User.findById(req.params.id)
-        if(!user||!user.avatar){
-            errorHandler(new NotFoundError)
-        }
-        // res.set('Content-Type','image/png')
-        res.send('hi')
-    } catch (e) {
-        
-    }
-})
+
 //route for sign up
 router.post('/signup',async(req,res)=>{
    const user = new userModel(req.body)
@@ -65,6 +42,7 @@ router.post('/login',async(req,res)=>{
     try {
         const user = await userModel.findByCredentials(req.body.email,req.body.password)
         const token = await user.generateAuthToken()
+        console.log(token)
         const success=new UserLoggedInSuccess
         successHandler(success,res)
     } catch (e) {
@@ -107,6 +85,61 @@ router.delete('/delete',authFunction, async(req,res)=>{
        successHandler(success,res)
     } catch (e) {
         errorHandler(new BadRequestError,req,res)
+    }
+})
+router.get('/users/me',authFunction, async(req,res)=>{
+     
+    res.send(req.user)
+})
+
+
+
+router.patch('/users/me',authFunction,async(req,res)=>{
+    const updates = Object.keys(req.body)
+    const allowedUpdates=['name','Age','password','email']
+    const isValidOperation=updates.every((update)=>allowedUpdates.includes(update))
+
+   if (!isValidOperation){
+       return res.status(400).send('Invalid Updates!')
+   }
+  
+    try {
+       const user = req.user
+         
+       updates.forEach((update)=>user[update]=req.body[update])
+
+       await user.save()
+
+          res.send(user)
+    } catch (error) {
+        errorHandler(new BadRequestError,req,res)
+    }
+
+})
+// posting image
+router.post('/user/me/avatar',authFunction, upload.single('avatar'), async(req,res)=>{
+    req.user.avatar=req.file.buffer
+    await req.user.save()
+    res.send(200)
+})
+//deleting image
+router.delete('/user/me/avatar',authFunction, async(req,res)=>{
+    req.user.avatar=undefined
+    await req.user.save()
+    res.send(200)
+})
+//serving image
+router.get('/users/:id/avatar',async(req,res)=>{
+    try {
+        console.log(req.params.id)
+        const user = await userModel.findById(req.params.id)
+        if(!user||!user.avatar){
+            throw new NotFoundError
+        }
+        res.set('Content-Type','image/png')
+        res.send(user.avatar)
+    } catch (e) {
+        errorHandler(e,req,res)
     }
 })
 

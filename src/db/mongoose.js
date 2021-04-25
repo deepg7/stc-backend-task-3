@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 const User = require('../models/User')
 
-const dbpath=process.env.MONGO_DB||'mongodb://127.0.0.1/user-profile-api'
+const dbpath=`mongodb+srv://admin:bakchodi@cluster0.hrpgp.mongodb.net/user-profile-api?retryWrites=true&w=majority` ||'mongodb://127.0.0.1/user-profile-api'
 
 mongoose.connect(dbpath, {
     useNewUrlParser: true, 
