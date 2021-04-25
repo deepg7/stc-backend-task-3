@@ -12,7 +12,7 @@ const upload = multer({
         fileSize:10000000,
     },
     fileFilter(req,file,cb){
-        if (!file.originalname.endsWith('.jpg'||'.jpeg'||'.png')){
+        if (!file.originalname.endsWith('.png')){
             return cb(new InvalidFileTypeError)
         }
         cb(undefined,true)
@@ -65,11 +65,12 @@ router.post('/logout',authFunction,async (req,res)=>{
         errorHandler(new BadRequestError,req,res)
     }
 })
-router.post ('/users/logOutAll',authFunction,async(req,res)=>{
+router.post ('/logOutAll',authFunction,async(req,res)=>{
     try {
         req.user.tokens=[]
         await req.user.save()
-        res.send()
+        const success=new UserLoggedOutSuccess
+        successHandler(success,res)
     } catch (e) {
         errorHandler(new BadRequestError,req,res)
     }
@@ -132,7 +133,7 @@ router.delete('/user/me/avatar',authFunction, async(req,res)=>{
 router.get('/users/me/avatar',authFunction,async(req,res)=>{
     try {
         res.set('Content-Type','image/png')
-        res.send(user.avatar)
+        res.send(req.user.avatar)
     } catch (e) {
         errorHandler(e,req,res)
     }
