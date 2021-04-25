@@ -6,13 +6,14 @@ const authFunction = require('./../middleware/auth')
 const { UserCreatedSuccess, UserLoggedInSuccess,UserLoggedOutSuccess , UserDeletedSuccess} = require('../utils/success')
 const { BadRequestError, AuthenticationError, SchemaValidationError,InvalidFileTypeError, NotFoundError } = require('../utils/error')
 const multer = require('multer')
+const sharp = require('sharp')
 
 const upload = multer({
     limits:{
         fileSize:10000000,
     },
     fileFilter(req,file,cb){
-        if (!file.originalname.endsWith('.png')){
+        if (!file.originalname.match(/\.(jpg|jpeg|png)$/)){
             return cb(new InvalidFileTypeError)
         }
         cb(undefined,true)
@@ -119,7 +120,8 @@ router.patch('/users/me',authFunction,async(req,res)=>{
 })
 // posting image
 router.post('/user/me/avatar',authFunction, upload.single('avatar'), async(req,res)=>{
-    req.user.avatar=req.file.buffer
+    const buffer = await sharp(req.file.buffer).png().resize({width:250,height:250}).toBuffer() 
+    req.user.avatar=buffer
     await req.user.save()
     res.send(200)
 })
