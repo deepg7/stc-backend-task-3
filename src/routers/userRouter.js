@@ -3,10 +3,13 @@ const userModel = require('../models/User')
 const errorHandler = require('./../middleware/errorHandler')
 const successHandler = require('./../middleware/successHandler')
 const authFunction = require('./../middleware/auth')
+const mailer = require('../middleware/mail')
 const { UserCreatedSuccess, UserLoggedInSuccess,UserLoggedOutSuccess , UserDeletedSuccess} = require('../utils/success')
 const { BadRequestError, AuthenticationError, SchemaValidationError,InvalidFileTypeError, NotFoundError } = require('../utils/error')
 const multer = require('multer')
 const sharp = require('sharp')
+const { text } = require('express')
+require('dotenv').config()
 
 const upload = multer({
     limits:{
@@ -29,6 +32,7 @@ router.post('/signup',async(req,res)=>{
    
     try {
         const token = await user.generateAuthToken()
+        mailer(req.body.email,'Sign Up Email','Thanks For Signing Up!')
         const success = new UserCreatedSuccess
         successHandler(success,res)
        console.log(token)
@@ -139,6 +143,40 @@ router.get('/users/me/avatar',authFunction,async(req,res)=>{
     } catch (e) {
         errorHandler(e,req,res)
     }
+})
+
+router.post('/verify',authFunction,async(req,res)=>{
+console.log('hi')
+const otp = require('../middleware/otp')
+req.user.otp=otp
+await req.user.save()
+const text = 'Your OTP is '+ otp + ' and it is valid for 3 minutes!' 
+console.log(req.user.email)
+mailer(req.user.email,'OTP For Email Verification!',text)
+async function deleteOtp(){
+    req.user.otp=null
+    await req.user.save()
+}
+res.send('Mail Sent')
+setTimeout(deleteOtp,180000)    
+})
+
+router.post('/verifyOTP',authFunction,async(req,res)=>{
+    if (req.user.otp==null){
+       return res.send('OTP Expired! Try Again!')
+    }
+    if(Number(req.user.otp)==Number(req.body.otp)){
+        req.user.email_verified=true
+        req.user.otp=null
+        await req.user.save()
+        const text = 'Hey ' +req.user.name + ' your email account has been verified successfully,Have a nice day!'
+        mailer(req.user.email,'Successfull Verification',text)
+        return res.send('Successfull!')
+    }
+    req.user.otp=null
+    await req.user.save()
+    res.send('Wrong OTP Entered!')
+    
 })
 
 module.exports=router

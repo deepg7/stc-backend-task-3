@@ -1,7 +1,9 @@
 const mongoose = require('mongoose')
 const User = require('../models/User')
+const path = require('path')
+require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 
-const dbpath=`mongodb+srv://admin:bakchodi@cluster0.hrpgp.mongodb.net/user-profile-api?retryWrites=true&w=majority` ||'mongodb://127.0.0.1/user-profile-api'
+const dbpath= process.env.MONGO_URI ||'mongodb://127.0.0.1/user-profile-api'
 
 mongoose.connect(dbpath, {
     useNewUrlParser: true, 
